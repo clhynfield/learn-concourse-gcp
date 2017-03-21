@@ -155,8 +155,59 @@ Follow [Deploying Concourse on Google Compute Engine][1]
   bosh target 10.0.0.6
   ```
 
-Your username is `admin` and password is `admin`.
+  Your username is `admin` and password is `admin`.
 
+### Deploy Concourse
+Complete the following steps from your bastion instance.
 
+1. Upload the required [Google BOSH Stemcell](http://bosh.io/docs/stemcell.html):
+
+  ```
+  bosh upload stemcell https://bosh.io/d/stemcells/bosh-google-kvm-ubuntu-trusty-go_agent?v=3263.8
+  ```
+
+2. Upload the required [BOSH Releases](http://bosh.io/docs/release.html):
+
+  ```
+  bosh upload release https://bosh.io/d/github.com/concourse/concourse?v=2.5.0
+  bosh upload release https://bosh.io/d/github.com/cloudfoundry/garden-runc-release?v=1.0.3
+  ```
+
+3. Download the [cloud-config.yml](cloud-config.yml) manifest file.
+
+4. Download the [concourse.yml](concourse.yml) manifest file and set a few environment variables:
+
+  ```
+  export external_ip=`gcloud compute addresses describe concourse | grep ^address: | cut -f2 -d' '`
+  export director_uuid=`bosh status --uuid 2>/dev/null`
+  ```
+
+5. Chose unique passwords for internal services and ATC and export them
+   ```
+   stty -echo; read common_password; stty echo; export common_password
+   stty -echo; read atc_password; stty echo; export atc_password
+   ```
+
+6. (Optional, skipped for now) Enable https support for concourse atc
+
+  In `concourse.yml` under the atc properties block fill in the following fields:
+  ```
+  tls_bind_port: 443
+  tls_cert: << SSL Cert for HTTPS >>
+  tls_key: << SSL Private Key >>
+  ```
+
+7. Upload the cloud config:
+
+  ```
+  bosh update cloud-config cloud-config.yml
+  ```
+
+8. Target the deployment file and deploy:
+
+  ```
+  bosh deployment concourse.yml
+  bosh deploy
+  ```
 
 [1]: https://github.com/cloudfoundry-incubator/bosh-google-cpi-release/tree/master/docs/concourse (Deploying Concourse on Google Compute Engine — BOSH Google CPI)
